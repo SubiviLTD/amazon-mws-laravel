@@ -1,6 +1,6 @@
 {
     "name": "subivi/amazon-mws-laravel",
-    "description": "Use Amazon's MWS web services with Laravel 5.x. Based on creacoon/amazon-mws-laravel package and modified to make it compatible with latest Laravel releases (+ bugfixes).",
+    "description": "Use Amazon's MWS web services with Laravel 5.x. Based on sonnenglas/laravel5-amazon-mws package and modified to make it compatible to use with multiple sellers.",
     "license": "Apache-2.0",
     "keywords": ["API", "Amazon", "PHP", "MWS", "Laravel"],
     "authors": [
