@@ -1,7 +1,5 @@
 <?php namespace Sonnenglas\AmazonMws;
 
-use Config, Log;
-use DateTime;
 use Exception;
 
 
@@ -107,13 +105,16 @@ abstract class AmazonCore
     protected $storeName;
     protected $options;
     protected $config;
+    protected $marketplaceConfig;
     protected $mockMode = false;
     protected $mockFiles;
     protected $mockIndex = 0;
     protected $env;
+    protected $marketplaces;
     protected $marketplaceId;
     protected $rawResponses = array();
     protected $proxyInfo = [];
+    protected $muteLog = false;
 
     /**
      * AmazonCore constructor sets up key information used in all Amazon requests.
@@ -132,13 +133,14 @@ abstract class AmazonCore
      * from the list to use as a response. See <i>setMock</i> for more information.</p>
      * @param string $config [optional] <p>An alternate config file to set. Used for testing.</p>
      */
-    protected function __construct($s, $mock = false, $m = null)
+    protected function __construct($config, $mock = false, $m = null)
     {
-        $this->setConfig();
-        $this->setStore($s);
+        $this->env = __DIR__ . '/config/environment.php';
+        $this->marketplaces = __DIR__ . '/config/marketplaces.php';
+
+        $this->setConfig($config);
         $this->setMock($mock, $m);
 
-        $this->env = __DIR__ . '/environment.php';
         $this->options['SignatureVersion'] = 2;
         $this->options['SignatureMethod'] = 'HmacSHA256';
     }
@@ -379,15 +381,61 @@ abstract class AmazonCore
     //  * @param string $path <p>The path to the config file.</p>
     //  * @throws Exception If the file cannot be found or read.
 
-    public function setConfig()
+    public function setConfig($config)
     {
-        $AMAZON_SERVICE_URL = Config::get('amazon-mws.AMAZON_SERVICE_URL');
+        include($this->marketplaces);
 
-        if (isset($AMAZON_SERVICE_URL)) {
-            $this->urlbase = $AMAZON_SERVICE_URL;
+        var_dump($marketplaces);
+
+        if (! isset($marketplaces)) {
+
+            throw new \InvalidArgumentException('Marketplaces does not set');
+        };
+
+        if (array_key_exists('country_code', $config)) {
+
+            $marketplaceConfig = $marketplaces[$config['country_code']];
+
+            if (! $marketplaceConfig) {
+
+                throw new \InvalidArgumentException('Wrong country code');
+            } else {
+
+                $this->marketplaceConfig = $marketplaceConfig;
+                $this->marketplaceId = $marketplaceConfig['marketplaceId'];
+                $AMAZON_SERVICE_URL = $marketplaceConfig['amazonMwsEndpoint'];
+                $this->urlbase = $AMAZON_SERVICE_URL;
+            }
         } else {
-            throw new Exception("Config file does not exist or cannot be read!");
+
+            throw new \InvalidArgumentException('Country code is missing');
         }
+
+        if (array_key_exists('seller_id', $config) && !empty($config['seller_id'])) {
+            $this->options['SellerId'] = $config['seller_id'];
+        } else {
+            throw new \InvalidArgumentException('Seller id is missing');
+        }
+
+        if (array_key_exists('auth_token', $config) && !empty($config['auth_token'])) {
+            $this->options['MWSAuthToken'] = $config['auth_token'];
+        } else {
+            throw new \InvalidArgumentException('Auth token is missing');
+        }
+
+        if (array_key_exists('keyId', $config) && !empty($config['keyId'])) {
+            $this->options['keyId'] = $config['keyId'];
+        } else {
+            throw new \InvalidArgumentException('Key id is missing');
+        }
+
+        if (array_key_exists('secretKey', $config) && !empty($config['secretKey'])) {
+            $this->options['secretKey'] = $config['secretKey'];
+        } else {
+            throw new \InvalidArgumentException('Secret key is missing');
+        }
+
+        $this->config = array_merge($marketplaceConfig, $config);
     }
 
     /**
@@ -401,52 +449,9 @@ abstract class AmazonCore
      * @param string $s <p>The store name to look for.</p>
      * @throws Exception If the file can't be found.
      */
-    public function setStore($s)
+    public function setSellerConfig($config)
     {
-        // if (file_exists($this->config)){
-        //     include($this->config);
-        // } else {
-        //     throw new \Exception("Config file does not exist!");
-        // }
 
-        $store = Config::get('amazon-mws.store');
-
-        if (array_key_exists($s, $store)) {
-            $this->storeName = $s;
-            if (array_key_exists('merchantId', $store[$s])) {
-                $this->options['SellerId'] = $store[$s]['merchantId'];
-            } else {
-                $this->log("Merchant ID is missing!", 'Warning');
-            }
-            if (array_key_exists('keyId', $store[$s])) {
-                $this->options['AWSAccessKeyId'] = $store[$s]['keyId'];
-            } else {
-                $this->log("Access Key ID is missing!", 'Warning');
-            }
-            if (!array_key_exists('secretKey', $store[$s])) {
-                $this->log("Secret Key is missing!", 'Warning');
-            }
-            // Overwrite Amazon service url if specified
-            if (array_key_exists('amazonServiceUrl', $store[$s])) {
-                $AMAZON_SERVICE_URL = $store[$s]['amazonServiceUrl'];
-                $this->urlbase = $AMAZON_SERVICE_URL;
-            }
-            if (array_key_exists('proxyInfo', $store[$s])) {
-                $this->proxyInfo = $store[$s]['proxyInfo'];
-            }
-
-            if (array_key_exists('authToken', $store[$s]) && !empty($store[$s]['authToken'])) {
-                $this->options['MWSAuthToken'] = $store[$s]['authToken'];
-            }
-
-            if (array_key_exists('marketplaceId', $store[$s]) && !empty($store[$s]['marketplaceId'])) {
-                $this->marketplaceId = $store[$s]['marketplaceId'];
-            }
-
-        } else {
-            throw new \Exception("Store $s does not exist!");
-            $this->log("Store $s does not exist!", 'Warning');
-        }
     }
 
     /**
@@ -479,7 +484,7 @@ abstract class AmazonCore
         if ($msg != false) {
             $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 
-            $muteLog = Config::get('amazon-mws.muteLog');
+            $muteLog = $this->muteLog;
             if (isset($muteLog) && $muteLog == true) {
                 return;
             }
@@ -584,16 +589,8 @@ abstract class AmazonCore
      */
     protected function genQuery()
     {
-        // if (file_exists($this->config)){
-        //     include($this->config);
-        // } else {
-        //     throw new Exception("Config file does not exist!");
-        // }
-
-        $store = Config::get('amazon-mws.store');
-
-        if (array_key_exists($this->storeName, $store) && array_key_exists('secretKey', $store[$this->storeName])) {
-            $secretKey = $store[$this->storeName]['secretKey'];
+        if (isset($this->config['secretKey'])) {
+            $secretKey = $this->config['secretKey'];
         } else {
             throw new Exception("Secret Key is missing!");
         }
