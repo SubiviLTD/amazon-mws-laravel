@@ -36,15 +36,15 @@ class AmazonReportRequest extends AmazonReportsCore
      * The parameters are passed to the parent constructor, which are
      * in turn passed to the AmazonCore constructor. See it for more information
      * on these parameters and common methods.
-     * @param string $s <p>Name for the store you want to use.</p>
+     * @param string $config <p>Name for the store you want to use.</p>
      * @param boolean $mock [optional] <p>This is a flag for enabling Mock Mode.
      * This defaults to <b>FALSE</b>.</p>
      * @param array|string $m [optional] <p>The files (or file) to use in Mock Mode.</p>
      * @param string $config [optional] <p>An alternate config file to set. Used for testing.</p>
      */
-    public function __construct($s, $mock = false, $m = null)
+    public function __construct($config, $mock = false, $m = null)
     {
-        parent::__construct($s, $mock, $m);
+        parent::__construct($config, $mock, $m);
         include($this->env);
 
         $this->options['Action'] = 'RequestReport';
@@ -78,7 +78,7 @@ class AmazonReportRequest extends AmazonReportsCore
          * Listings Reports:
          *      Open Listings Report ~ _GET_FLAT_FILE_OPEN_LISTINGS_DATA_
          *      Open Listings Report ~ _GET_MERCHANT_LISTINGS_DATA_BACK_COMPAT_
-         *      Merchant Listings Report ~ _GET_MERCHANT_LISTINGS_DATA_
+         *      Merchant Listings RReport ~ _GET_MERCHANT_LISTINGS_DATA_
          *      Merchant Listings Lite Report ~ _GET_MERCHANT_LISTINGS_DATA_LITE_
          *      Merchant Listings Liter Report ~ _GET_MERCHANT_LISTINGS_DATA_LITER_
          *      Canceled Listings Report ~ _GET_MERCHANT_CANCELLED_LISTINGS_DATA_

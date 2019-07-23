@@ -42,15 +42,15 @@ class AmazonOrderList extends AmazonOrderCore implements Iterator
      * The parameters are passed to the parent constructor, which are
      * in turn passed to the AmazonCore constructor. See it for more information
      * on these parameters and common methods.
-     * @param string $s <p>Name for the store you want to use.</p>
+     * @param string $config <p>Config for the store you want to use.</p>
      * @param boolean $mock [optional] <p>This is a flag for enabling Mock Mode.
      * This defaults to <b>FALSE</b>.</p>
      * @param array|string $m [optional] <p>The files (or file) to use in Mock Mode.</p>
      * @param string $config [optional] <p>An alternate config file to set. Used for testing.</p>
      */
-    public function __construct($s, $mock = false, $m = null)
+    public function __construct($config, $mock = false, $m = null)
     {
-        parent::__construct($s, $mock, $m);
+        parent::__construct($config, $mock, $m);
         include($this->env);
         // if (file_exists($this->config)){
         //     include($this->config);
@@ -58,13 +58,7 @@ class AmazonOrderList extends AmazonOrderCore implements Iterator
         //     throw new \Exception('Config file does not exist!');
         // }
 
-        $store = Config::get('amazon-mws.store');
-
-        if (isset($store[$s]) && array_key_exists('marketplaceId', $store[$s])) {
-            $this->options['MarketplaceId.Id.1'] = $store[$s]['marketplaceId'];
-        } else {
-            $this->log("Marketplace ID is missing", 'Urgent');
-        }
+        $this->options['MarketplaceId.Id.1'] = $this->marketplaceId;
 
         if (isset($THROTTLE_LIMIT_ORDERLIST)) {
             $this->throttleLimit = $THROTTLE_LIMIT_ORDERLIST;
@@ -442,7 +436,7 @@ class AmazonOrderList extends AmazonOrderCore implements Iterator
             if ($key != 'Order') {
                 break;
             }
-            $this->orderList[$this->index] = new AmazonOrder($this->storeName, null, $data, $this->mockMode,
+            $this->orderList[$this->index] = new AmazonOrder($this->config, null, $data, $this->mockMode,
                 $this->mockFiles, $this->config);
             $this->orderList[$this->index]->mockIndex = $this->mockIndex;
             $this->index++;

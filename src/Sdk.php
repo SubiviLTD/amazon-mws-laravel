@@ -12,7 +12,7 @@ class Sdk
     /**
      * @param array $config Configuration option values for all services.
      */
-    public function __construct(array $config = [])
+    public function __construct(array $config)
     {
         $this->config = $config;
     }
@@ -34,12 +34,13 @@ class Sdk
             throw new \BadMethodCallException("Unknown class: {$class}.");
         }
 
-        $objectReflection = new ReflectionClass($class);
-        return $objectReflection->newInstanceArgs($args);
+        return new $class($this->config);
+//        $objectReflection = new ReflectionClass($class);
+//        return $objectReflection->newInstanceArgs($args);
     }
 
     protected function getClass($name) {
 
-        return "Amazon" . $name;
+        return "Sonnenglas\\AmazonMws\\Amazon" . $name;
     }
 }

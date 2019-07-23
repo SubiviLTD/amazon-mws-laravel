@@ -42,16 +42,16 @@ class AmazonOrderSet extends AmazonOrderCore implements \Iterator
      * on these parameters and common methods.
      * Please note that an extra parameter comes before the usual Mock Mode parameters,
      * so be careful when setting up the object.
-     * @param string $s <p>Name for the store you want to use.</p>
+     * @param string $config <p>Name for the store you want to use.</p>
      * @param string $o [optional] <p>The Order IDs to set for the object.</p>
      * @param boolean $mock [optional] <p>This is a flag for enabling Mock Mode.
      * This defaults to <b>FALSE</b>.</p>
      * @param array|string $m [optional] <p>The files (or file) to use in Mock Mode.</p>
      * @param string $config [optional] <p>An alternate config file to set. Used for testing.</p>
      */
-    public function __construct($s, $o = null, $mock = false, $m = null)
+    public function __construct($config, $o = null, $mock = false, $m = null)
     {
-        parent::__construct($s, $mock, $m);
+        parent::__construct($config, $mock, $m);
         $this->i = 0;
         include($this->env);
 
@@ -167,7 +167,7 @@ class AmazonOrderSet extends AmazonOrderCore implements \Iterator
             if ($key != 'Order') {
                 break;
             }
-            $this->orderList[$this->index] = new AmazonOrder($this->storeName, null, $order, $this->mockMode,
+            $this->orderList[$this->index] = new AmazonOrder($this->config, null, $order, $this->mockMode,
                 $this->mockFiles, $this->config);
             $this->orderList[$this->index]->mockIndex = $this->mockIndex;
             $this->index++;

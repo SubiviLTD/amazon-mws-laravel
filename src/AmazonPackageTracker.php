@@ -37,16 +37,16 @@ class AmazonPackageTracker extends AmazonOutboundCore
      * on these parameters and common methods.
      * Please note that an extra parameter comes before the usual Mock Mode parameters,
      * so be careful when setting up the object.
-     * @param string $s <p>Name for the store you want to use.</p>
+     * @param string $config <p>Name for the store you want to use.</p>
      * @param string $id [optional] <p>The package ID to set for the object.</p>
      * @param boolean $mock [optional] <p>This is a flag for enabling Mock Mode.
      * This defaults to <b>FALSE</b>.</p>
      * @param array|string $m [optional] <p>The files (or file) to use in Mock Mode.</p>
      * @param string $config [optional] <p>An alternate config file to set. Used for testing.</p>
      */
-    public function __construct($s, $id = null, $mock = false, $m = null)
+    public function __construct($config, $id = null, $mock = false, $m = null)
     {
-        parent::__construct($s, $mock, $m);
+        parent::__construct($config, $mock, $m);
 
         if ($id) {
             $this->setPackageNumber($id);

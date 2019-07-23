@@ -42,15 +42,15 @@ class AmazonFulfillmentOrderList extends AmazonOutboundCore implements \Iterator
      * The parameters are passed to the parent constructor, which are
      * in turn passed to the AmazonCore constructor. See it for more information
      * on these parameters and common methods.
-     * @param string $s <p>Name for the store you want to use.</p>
+     * @param string $config <p>Config for the store you want to use.</p>
      * @param boolean $mock [optional] <p>This is a flag for enabling Mock Mode.
      * This defaults to <b>FALSE</b>.</p>
      * @param array|string $m [optional] <p>The files (or file) to use in Mock Mode.</p>
      * @param string $config [optional] <p>An alternate config file to set. Used for testing.</p>
      */
-    public function __construct($s, $mock = false, $m = null)
+    public function __construct($config, $mock = false, $m = null)
     {
-        parent::__construct($s, $mock, $m);
+        parent::__construct($config, $mock, $m);
 
         $this->options['Action'] = 'ListAllFulfillmentOrders';
     }
@@ -272,7 +272,7 @@ class AmazonFulfillmentOrderList extends AmazonOutboundCore implements \Iterator
         $list = array();
         $i = 0;
         foreach ($this->orderList as $x) {
-            $list[$i] = new AmazonFulfillmentOrder($this->storeName, $x['SellerFulfillmentOrderId'], $this->mockMode,
+            $list[$i] = new AmazonFulfillmentOrder($this->config, $x['SellerFulfillmentOrderId'], $this->mockMode,
                 $this->mockFiles, $this->config);
             $list[$i]->mockIndex = $this->mockIndex;
             $list[$i]->fetchOrder();

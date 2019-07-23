@@ -38,15 +38,15 @@ abstract class AmazonProductsCore extends AmazonCore
      * The parameters are passed by the child objects' constructors, which are
      * in turn passed to the AmazonCore constructor. See it for more information
      * on these parameters and common methods.
-     * @param string $s <p>Name for the store you want to use.</p>
+     * @param string $config <p>Config for the store you want to use.</p>
      * @param boolean $mock [optional] <p>This is a flag for enabling Mock Mode.
      * This defaults to <b>FALSE</b>.</p>
      * @param array|string $m [optional] <p>The files (or file) to use in Mock Mode.</p>
      * @param string $config [optional] <p>An alternate config file to set. Used for testing.</p>
      */
-    public function __construct($s, $mock = false, $m = null)
+    public function __construct($config, $mock = false, $m = null)
     {
-        parent::__construct($s, $mock, $m);
+        parent::__construct($config, $mock, $m);
         include($this->env);
 
         if (isset($AMAZON_VERSION_PRODUCTS)) {
@@ -54,12 +54,7 @@ abstract class AmazonProductsCore extends AmazonCore
             $this->options['Version'] = $AMAZON_VERSION_PRODUCTS;
         }
 
-        $store = config('amazon-mws.store');
-        if (isset($store[$s]) && array_key_exists('marketplaceId', $store[$s])) {
-            $this->options['MarketplaceId'] = $store[$s]['marketplaceId'];
-        } else {
-            $this->log("Marketplace ID is missing", 'Urgent');
-        }
+        $this->options['MarketplaceId'] = $this->marketplaceId;
 
         if (isset($THROTTLE_LIMIT_PRODUCT)) {
             $this->throttleLimit = $THROTTLE_LIMIT_PRODUCT;
@@ -89,13 +84,13 @@ abstract class AmazonProductsCore extends AmazonCore
             }
             if (isset($x->Products)) {
                 foreach ($x->Products->children() as $z) {
-                    $this->productList[$this->index] = new AmazonProduct($this->storeName, $z, $this->mockMode,
+                    $this->productList[$this->index] = new AmazonProduct($this->config, $z, $this->mockMode,
                         $this->mockFiles);
                     $this->index++;
                 }
             } else {
                 if ($x->getName() == 'GetProductCategoriesForSKUResult' || $x->getName() == 'GetProductCategoriesForASINResult') {
-                    $this->productList[$this->index] = new AmazonProduct($this->storeName, $x, $this->mockMode,
+                    $this->productList[$this->index] = new AmazonProduct($this->config, $x, $this->mockMode,
                         $this->mockFiles);
                     $this->index++;
                 } else {
@@ -108,7 +103,7 @@ abstract class AmazonProductsCore extends AmazonCore
                             $this->productList[$z->getName()] = (string)$z;
                             $this->log("Special case: " . $z->getName(), 'Warning');
                         } else {
-                            $this->productList[$this->index] = new AmazonProduct($this->storeName, $z, $this->mockMode,
+                            $this->productList[$this->index] = new AmazonProduct($this->config, $z, $this->mockMode,
                                 $this->mockFiles);
                             $this->index++;
                         }

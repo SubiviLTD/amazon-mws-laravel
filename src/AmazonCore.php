@@ -1,6 +1,8 @@
 <?php namespace Sonnenglas\AmazonMws;
 
 use Exception;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Client as HttpClient;
 
 
 /**
@@ -102,7 +104,6 @@ abstract class AmazonCore
     protected $throttleSafe;
     protected $throttleGroup;
     protected $throttleStop = false;
-    protected $storeName;
     protected $options;
     protected $config;
     protected $marketplaceConfig;
@@ -115,6 +116,11 @@ abstract class AmazonCore
     protected $rawResponses = array();
     protected $proxyInfo = [];
     protected $muteLog = false;
+
+    /**
+     * @var GuzzleHttp\ClientInterface $httpClient
+     */
+    protected $httpClient;
 
     /**
      * AmazonCore constructor sets up key information used in all Amazon requests.
@@ -191,6 +197,40 @@ abstract class AmazonCore
                 }
             }
         }
+    }
+
+    /**
+     * Sets http client
+     *
+     * @param $handler
+     */
+    public function setHttpHandler($handler)
+    {
+        $this->httpClient = $handler;
+    }
+
+    /**
+     * Returns http client
+     *
+     * @return GuzzleHttp\ClientInterface implementation
+     */
+    private function getHttpClient()
+    {
+        if (null === $this->httpClient) {
+            $this->httpClient = $this->createDefaultHttpClient();
+        }
+
+        return $this->httpClient;
+    }
+
+    /**
+     * Creates default http client
+     *
+     * @return HttpClient
+     */
+    private function createDefaultHttpClient()
+    {
+        return new HttpClient();
     }
 
     /**
@@ -385,8 +425,6 @@ abstract class AmazonCore
     {
         include($this->marketplaces);
 
-        var_dump($marketplaces);
-
         if (! isset($marketplaces)) {
 
             throw new \InvalidArgumentException('Marketplaces does not set');
@@ -424,16 +462,20 @@ abstract class AmazonCore
         }
 
         if (array_key_exists('keyId', $config) && !empty($config['keyId'])) {
-            $this->options['keyId'] = $config['keyId'];
+            $this->options['AWSAccessKeyId'] = $config['keyId'];
         } else {
             throw new \InvalidArgumentException('Key id is missing');
         }
 
-        if (array_key_exists('secretKey', $config) && !empty($config['secretKey'])) {
-            $this->options['secretKey'] = $config['secretKey'];
-        } else {
+        if (!array_key_exists('secretKey', $config) || empty($config['secretKey'])) {
+
             throw new \InvalidArgumentException('Secret key is missing');
         }
+
+        $this->setHttpHandler(isset($config['httpHandler'])
+            ? $config['httpHandler']
+            : new HttpClient()
+        );
 
         $this->config = array_merge($marketplaceConfig, $config);
     }
@@ -598,7 +640,7 @@ abstract class AmazonCore
         unset($this->options['Signature']);
         $this->options['Timestamp'] = $this->genTime();
         $this->options['Signature'] = $this->_signParameters($this->options, $secretKey);
-        return $this->_getParametersAsString($this->options);
+        return $this->options;
     }
 
     /**
@@ -713,42 +755,35 @@ abstract class AmazonCore
     {
         $return = array();
 
-        $ch = curl_init();
+        $client = new HttpClient();
 
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 0);
-        curl_setopt($ch, CURLOPT_FORBID_REUSE, 1);
-        curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
-        curl_setopt($ch, CURLOPT_HEADER, 1);
-        curl_setopt($ch, CURLOPT_URL, $url);
+        $options = [
+            'curl' => [
+                CURLOPT_RETURNTRANSFER  =>  true,
+                CURLOPT_TIMEOUT =>  0,
+                CURLOPT_FORBID_REUSE    =>  1,
+                CURLOPT_FRESH_CONNECT   =>  1,
+                CURLOPT_HEADER  =>  1
+            ]
+        ];
         if (!empty($param)) {
             if (!empty($param['Header'])) {
-                curl_setopt($ch, CURLOPT_HTTPHEADER, $param['Header']);
+                $options['headers'] = $param['Header'];
             }
             if (!empty($param['Post'])) {
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $param['Post']);
+                $options['form_params'] = $param['Post'];
             }
         }
 
-        if (!empty($this->proxyInfo)
-            && !empty($this->proxyInfo['ip'])
-            && !empty($this->proxyInfo['port'])
-        ) {
-            curl_setopt($ch, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
-            curl_setopt($ch, CURLOPT_PROXY, $this->proxyInfo['ip']);
-            curl_setopt($ch, CURLOPT_PROXYPORT, $this->proxyInfo['port']);
-            if (!empty($this->proxyInfo['user_pwd'])) {
-                curl_setopt($ch, CURLOPT_PROXYUSERPWD, $this->proxyInfo['user_pwd']);
-            }
-            curl_setopt($ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
-        }
-
-        $data = curl_exec($ch);
-        if (curl_errno($ch)) {
+        try {
+            $response = $client->post($url, $options);
+        } catch(\GuzzleHttp\Exception\ClientException $e) {
             $return['ok'] = -1;
-            $return['error'] = curl_error($ch);
+            $return['error'] = $e->getResponse()->getBody()->getContents();
             return $return;
         }
+
+        $data = $response->getBody()->getContents();
 
         if (is_numeric(strpos($data, 'HTTP/1.1 100 Continue'))) {
             $data = str_replace('HTTP/1.1 100 Continue', '', $data);
@@ -789,7 +824,6 @@ abstract class AmazonCore
             }
         }
 
-        curl_close($ch);
         return $return;
     }
     // End Functions from Athena

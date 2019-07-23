@@ -42,15 +42,15 @@ class AmazonShipmentList extends AmazonInboundCore implements \Iterator
      * The parameters are passed to the parent constructor, which are
      * in turn passed to the AmazonCore constructor. See it for more information
      * on these parameters and common methods.
-     * @param string $s <p>Name for the store you want to use.</p>
+     * @param string $config <p>Config for the store you want to use.</p>
      * @param boolean $mock [optional] <p>This is a flag for enabling Mock Mode.
      * This defaults to <b>FALSE</b>.</p>
      * @param array|string $m [optional] <p>The files (or file) to use in Mock Mode.</p>
      * @param string $config [optional] <p>An alternate config file to set. Used for testing.</p>
      */
-    public function __construct($s, $mock = false, $m = null)
+    public function __construct($config, $mock = false, $m = null)
     {
-        parent::__construct($s, $mock, $m);
+        parent::__construct($config, $mock, $m);
     }
 
     /**
@@ -379,7 +379,7 @@ class AmazonShipmentList extends AmazonInboundCore implements \Iterator
             $a = array();
             $n = 0;
             foreach ($this->shipmentList as $x) {
-                $a[$n] = new AmazonShipmentItemList($this->storeName, $x['ShipmentId'], $this->mockMode,
+                $a[$n] = new AmazonShipmentItemList($this->config, $x['ShipmentId'], $this->mockMode,
                     $this->mockFiles, $this->config);
                 $a[$n]->setUseToken($token);
                 $a[$n]->mockIndex = $this->mockIndex;
@@ -389,7 +389,7 @@ class AmazonShipmentList extends AmazonInboundCore implements \Iterator
             return $a;
         } else {
             if (is_int($i)) {
-                $temp = new AmazonShipmentItemList($this->storeName, $this->shipmentList[$i]['ShipmentId'],
+                $temp = new AmazonShipmentItemList($this->config, $this->shipmentList[$i]['ShipmentId'],
                     $this->mockMode, $this->mockFiles, $this->config);
                 $temp->setUseToken($token);
                 $temp->mockIndex = $this->mockIndex;
