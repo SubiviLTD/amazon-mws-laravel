@@ -96,6 +96,11 @@ class AmazonProduct extends AmazonProductsCore
                     if ($x->children('ns2', true)->count() > 0) {
                         //another layer
                         foreach ($x->children('ns2', true) as $y) {
+                            if ($y->attributes()->count() > 0) {
+                                foreach ($y->attributes() as $k => $v) {
+                                    $this->data['AttributeSets'][$anum][$x->getName()][$y->getName() . $k] = (string)$v;
+                                }
+                            }
                             if ($y->children('ns2', true)->count() > 0) {
                                 //we need to go deeper
                                 foreach ($y->children('ns2', true) as $z) {

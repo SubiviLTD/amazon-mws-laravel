@@ -1,5 +1,6 @@
 <?php namespace Sonnenglas\AmazonMws;
 
+use Carbon\Carbon;
 use Exception;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Client as HttpClient;
@@ -120,7 +121,7 @@ abstract class AmazonCore
     /**
      * @var GuzzleHttp\ClientInterface $httpClient
      */
-    protected $httpClient;
+    private $httpClient;
 
     /**
      * AmazonCore constructor sets up key information used in all Amazon requests.
@@ -609,6 +610,8 @@ abstract class AmazonCore
     {
         if (!$time) {
             $time = time();
+        } else if (is_a($time, 'DateTime')) {
+            $time = $time->getTimestamp();
         } else if (is_numeric($time)) {
             $time = (int)$time;
         } else if (is_string($time)) {
@@ -617,7 +620,6 @@ abstract class AmazonCore
             throw new Exception('Invalid time input given');
         }
         return date('c', $time-120);
-
     }
 
     /**
@@ -755,7 +757,7 @@ abstract class AmazonCore
     {
         $return = array();
 
-        $client = new HttpClient();
+        $client = $this->getHttpClient();
 
         $options = [
             'curl' => [

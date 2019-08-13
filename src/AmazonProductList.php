@@ -110,6 +110,8 @@ class AmazonProductList extends AmazonProductsCore implements \Iterator
                 unset($this->options[$op]);
             }
         }
+
+        $this->productList = null;
     }
 
     /**

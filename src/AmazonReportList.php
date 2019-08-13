@@ -426,6 +426,20 @@ class AmazonReportList extends AmazonReportsCore implements \Iterator
     }
 
     /**
+     * Returns list of reports
+     *
+     * @return bool
+     */
+    public function getReportList()
+    {
+        if (!isset($this->reportList)) {
+            return false;
+        }
+
+        return $this->reportList;
+    }
+
+    /**
      * Returns the report ID for the specified entry.
      *
      * This method will return <b>FALSE</b> if the list has not yet been filled.
